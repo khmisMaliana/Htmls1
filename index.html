@@ -29,6 +29,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 .nav{display:flex;gap:10px;margin-top:16px}
 .nav button{flex:1;padding:13px;border-radius:12px;background:var(--btn);color:#fff;font-weight:600}
 .nav button:disabled{opacity:.35}
+.sv{display:block;width:100%;margin-top:12px;padding:11px;border-radius:12px;border:1px dashed var(--line);color:var(--mu);font-size:14px}
 .cnt{text-align:center;color:var(--mu);font-size:14px;margin-top:10px}
 </style>
 </head>
@@ -45,7 +46,7 @@ const all=f=>f.qs.concat(...f.ch.map(all));
 F.forEach(f=>f.n=all(f).length);
 const roots=[...F.values()].filter(f=>!F.has(f.p));
 const L='ABCDE';
-let cur=null,list=[],i=0,ans={};
+let cur=null,list=[],i=0,ans={},rev={};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function pathOf(f){const a=[];for(let x=f;x;x=F.get(x.p))a.unshift(x.t);return a.join(' › ')}
@@ -59,17 +60,19 @@ function home(f){
   if(f&&!kids.length&&!f.qs.length)h='<p class="cnt">Aucune question</p>';
   $('#m').innerHTML=h;window.scrollTo(0,0);
 }
-function start(f){list=f.qs;i=0;ans={};show()}
+function start(f){list=f.qs;i=0;ans={};rev={};show()}
 function show(){
-  const q=list[i],a=ans[i];
+  const q=list[i],a=ans[i]||[],R=rev[i];
   $('#t').textContent=cur.t;
   $('#path').textContent=pathOf(F.get(cur.p));
   let h=`<div class="cnt">${i+1} / ${list.length}</div><div class="q">${esc(q.q)}</div>`;
-  h+=q.o.map((o,k)=>{let c='';if(a!==undefined){if(q.a.includes(k))c='ok';else if(k===a)c='ko'}
+  h+=q.o.map((o,k)=>{let c='';if(q.a.includes(k)&&(R||a.includes(k)))c='ok';else if(a.includes(k))c='ko'
     return `<button class="o ${c}" data-k="${k}"><b>${L[k]}</b><span>${esc(o)}</span></button>`}).join('');
-  if(a!==undefined&&q.e)h+=`<div class="ex">${esc(q.e)}</div>`;
+  if((a.length||R)&&q.e)h+=`<div class="ex">${esc(q.e)}</div>`;
+  if(!R)h+=`<button class="sv" id="sv">Voir la réponse</button>`;
   h+=`<div class="nav"><button id="pv" ${i?'':'disabled'}>← Précédent</button><button id="nx" ${i<list.length-1?'':'disabled'}>Suivant →</button></div>`;
   $('#m').innerHTML=h;
+  if($('#sv'))$('#sv').onclick=()=>{rev[i]=true;show()};
   $('#pv').onclick=()=>{i--;show();window.scrollTo(0,0)};
   $('#nx').onclick=()=>{i++;show();window.scrollTo(0,0)};
 }
@@ -78,7 +81,7 @@ $('#m').addEventListener('click',e=>{
   if(b.dataset.go){start(cur);return}
   if(b.dataset.id){const f=F.get(+b.dataset.id);const kids=f.ch.filter(c=>c.n>0);
     if(!kids.length&&f.qs.length){cur=f;start(f)}else home(f);return}
-  if(b.dataset.k!==undefined&&ans[i]===undefined){ans[i]=+b.dataset.k;show()}
+  if(b.dataset.k!==undefined){const k=+b.dataset.k,a=ans[i]=ans[i]||[];if(!a.includes(k)){a.push(k);const y=scrollY;show();scrollTo(0,y)}}
 });
 $('#bk').onclick=()=>{
   if(list.length){list=[];const k=cur.ch.some(c=>c.n>0);home(k?cur:(F.get(cur.p)||null))}
