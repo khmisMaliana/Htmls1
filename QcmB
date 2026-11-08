@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>أداة دمج الدروس</title>
+<style>
+/* ألوان الوضع الفاتح */
+:root{--bg:#f5f6fa;--card:#fff;--tx:#161a23;--mu:#667085;--line:#dfe3ec;--ok:#dcf6e5;--okb:#1f9d55;--ko:#fde3e3;--kob:#d13b3b;--btn:#2f6fdb;--warn:#fff3d6;--warnb:#c98a00}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#181b21;--tx:#eceef3;--mu:#98a0b0;--line:#2c313a;--ok:#15402a;--okb:#3ec27a;--ko:#4a2020;--kob:#f06a6a;--btn:#4b82e6;--warn:#3d3214;--warnb:#e0a82e}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Naskh Arabic",sans-serif}
+.w{max-width:820px;margin:0 auto;padding:14px 14px calc(40px + env(safe-area-inset-bottom,0px))}
+h1{font-size:20px;margin:6px 0 4px}
+.sub{color:var(--mu);font-size:14px;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}
+.card h2{font-size:16px;margin:0 0 8px;display:flex;gap:8px;align-items:center}
+.num{background:var(--btn);color:#fff;border-radius:50%;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.b{padding:11px 14px;border-radius:11px;background:var(--btn);color:#fff;font-weight:700}
+.b.sec{background:var(--card);color:var(--tx);border:1px solid var(--line);font-weight:600}
+.b:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.st{font-size:14px;color:var(--mu);margin-top:8px;direction:rtl}
+.st b{color:var(--tx)}
+.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}
+.les{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}
+.les .t{font-weight:700;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.les .t span.ltr{direction:ltr;text-align:left}
+.x{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);flex:none;font-size:16px}
+.cnt{color:var(--mu);font-size:13px}
+.dest{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.dest label{display:flex;gap:6px;align-items:center;font-weight:600;min-width:78px}
+.pick{flex:1;min-width:180px;text-align:start;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);background:var(--bg);font-size:14px;direction:ltr;unicode-bidi:plaintext;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick.set{border-style:solid;border-color:var(--btn)}
+input[type=text]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--tx);font:inherit;direction:ltr;unicode-bidi:plaintext}
+.hint{font-size:12px;color:var(--mu);margin-top:4px}
+.msg{padding:10px 12px;border-radius:10px;margin-top:10px;font-size:14px}
+.msg.ok{background:var(--ok);border:1px solid var(--okb)}
+.msg.err{background:var(--ko);border:1px solid var(--kob)}
+.msg.warn{background:var(--warn);border:1px solid var(--warnb)}
+.msg ul{margin:6px 0 0;padding-inline-start:20px}
+.msg li{direction:rtl}
+/* نافذة اختيار المجلد */
+#md{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:10}
+#md.on{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:820px;max-height:88vh;border-radius:18px 18px 0 0;display:flex;flex-direction:column;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px))}
+.sheet h3{margin:4px 0 8px;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+#tree{overflow:auto;flex:1;margin-top:8px;border:1px solid var(--line);border-radius:12px;background:var(--card);direction:ltr}
+.n{display:flex;align-items:center;gap:4px;padding:9px 8px;border-bottom:1px solid var(--line);cursor:pointer;text-align:left}
+.n:last-child{border-bottom:0}
+.n.sel{background:var(--ok);}
+.tg{width:26px;height:26px;flex:none;border-radius:6px;font-size:14px;color:var(--mu)}
+.n .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.n .c{font-size:12px;color:var(--mu);white-space:nowrap}
+.n.root{font-weight:700;color:var(--btn)}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>🧩 أداة دمج الدروس في قاعدة QCM</h1>
+<p class="sub">حمّل آخر ملف قاعدة بيانات، أضف ملفات الدروس (HTML)، اختر المجلد، ثم حمّل الملف الكامل الناتج.</p>
+
+<div class="card">
+<h2><span class="num">1</span> ملف قاعدة البيانات (الأخير)</h2>
+<div class="row"><button class="b" id="bDb">📂 اختيار ملف القاعدة</button></div>
+<input type="file" id="fDb" accept=".html,.htm,text/html" hidden>
+<div class="st" id="sDb">لم يتم اختيار ملف بعد.</div>
+</div>
+
+<div class="card">
+<h2><span class="num">2</span> ملفات الدروس</h2>
+<div class="row">
+<button class="b sec" id="bLes" disabled>➕ إضافة ملف/ملفات درس</button>
+<button class="b sec" id="bDir" disabled>📁 إضافة مجلد دروس كامل</button>
+</div>
+<input type="file" id="fLes" accept=".html,.htm,text/html" multiple hidden>
+<input type="file" id="fDir" webkitdirectory directory multiple hidden>
+<div id="lessons"></div>
+<div class="st" id="sLes">اختر ملف القاعدة أولاً.</div>
+</div>
+
+<div class="card">
+<h2><span class="num">3</span> الدمج والتحميل</h2>
+<div class="row">
+<button class="b" id="bGo" disabled>⚙️ دمج وإنشاء الملف الكامل</button>
+<button class="b sec" id="bShare" hidden>📤 مشاركة / حفظ</button>
+</div>
+<div id="out"></div>
+</div>
+</div>
+
+<div id="md"><div class="sheet">
+<h3><span id="mdT">اختر المجلد</span><button class="x" id="mdX">✕</button></h3>
+<input type="text" id="q" placeholder="🔎 Rechercher un dossier…">
+<div id="tree"></div>
+</div></div>
+
+<script>
+// ============ حالة البرنامج ============
+const S={name:'',text:'',DB:null,FC:null,lessons:[],last:null};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+
+// ============ قراءة ثابت JSON من نص الملف (يتجاهل الأقواس داخل النصوص) ============
+function findLiteral(text,key){
+  const i=text.indexOf(key); if(i<0) return null;
+  let s=i+key.length; while(s<text.length&&/\s/.test(text[s])) s++;
+  if(text[s]!=='{'&&text[s]!=='[') return null;
+  let depth=0,str=false,q='',esc=false;
+  for(let j=s;j<text.length;j++){
+    const c=text[j];
+    if(str){ if(esc) esc=false; else if(c==='\\') esc=true; else if(c===q) str=false; continue; }
+    if(c==='"'||c==="'"){ str=true; q=c; continue; }
+    if(c==='{'||c==='[') depth++;
+    else if(c==='}'||c===']'){ depth--; if(depth===0) return [s,j+1]; }
+  }
+  return null;
+}
+function parseLit(text,key){
+  const r=findLiteral(text,key); if(!r) return null;
+  const raw=text.slice(r[0],r[1]);
+  try{ return JSON.parse(raw); }catch(e){ try{ return (new Function('return '+raw))(); }catch(e2){ return null; } }
+}
+function replaceLit(text,key,obj){
+  const r=findLiteral(text,key); if(!r) throw new Error('لم أجد '+key);
+  const json=JSON.stringify(obj).replace(/</g,'\\u003c').split(String.fromCharCode(8232)).join('\\u2028').split(String.fromCharCode(8233)).join('\\u2029');
+  return text.slice(0,r[0])+json+text.slice(r[1]);
+}
+
+// ============ شجرة المجلدات ============
+function tree(F){ // F = [[id,parent,type,name],...]
+  const m=new Map(); F.forEach(f=>m.set(f[0],{id:f[0],p:f[1],t:f[3],ch:[]}));
+  const roots=[]; m.forEach(n=>{ const P=m.get(n.p); P?P.ch.push(n):roots.push(n); });
+  return {m,roots};
+}
+function pathOf(F,id){
+  if(id==null) return '(الجذر / racine)';
+  const m=new Map(F.map(f=>[f[0],f])); const a=[];
+  for(let x=m.get(id);x;x=m.get(x[1])) a.unshift(x[3]);
+  return a.join(' › ');
+}
+function countBelow(kind,id){ // عدد العناصر داخل مجلد (مع الأبناء)
+  const F=kind==='q'?S.DB.f:S.FC.f, I=kind==='q'?S.DB.q:S.FC.c;
+  const T=tree(F); const ids=new Set(); (function w(n){ids.add(n.id);n.ch.forEach(w)})(T.m.get(id));
+  return I.reduce((a,x)=>a+(ids.has(x[1])?1:0),0);
+}
+
+// ============ 1) تحميل القاعدة ============
+$('#bDb').onclick=()=>$('#fDb').click();
+$('#fDb').onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const text=await f.text();
+  const DB=parseLit(text,'const DB='), FC=parseLit(text,'const FC=');
+  const s=$('#sDb');
+  if(!DB||!Array.isArray(DB.f)||!Array.isArray(DB.q)){
+    s.innerHTML='<div class="msg err">❌ هذا الملف ليس ملف قاعدة بيانات صالحًا (لم أجد <span class="ltr">const DB=</span>).</div>'; S.DB=null; refresh(); return;
+  }
+  S.name=f.name; S.text=text; S.DB=DB; S.FC=(FC&&Array.isArray(FC.f)&&Array.isArray(FC.c))?FC:null;
+  s.innerHTML='📄 <b class="ltr">'+esc(f.name)+'</b> — الإصدار <b class="ltr">'+esc(DB.v||'?')+'</b><br>QCM: <b>'+DB.q.length+'</b> سؤال في <b>'+DB.f.length+'</b> مجلد'
+   +(S.FC?' · البطاقات: <b>'+S.FC.c.length+'</b> بطاقة في <b>'+S.FC.f.length+'</b> مجلد':' · <span style="color:var(--kob)">لا توجد بطاقات في هذا الملف</span>');
+  S.lessons.forEach(L=>{L.qDest=undefined;L.cDest=undefined});
+  restoreLast(); refresh();
+};
+function restoreLast(){ // تذكّر آخر مجلدات اختيرت (بالمسار النصي)
+  let r={};try{r=JSON.parse(localStorage.getItem('merge-last')||'{}')}catch(e){}
+  S.last=r;
+}
+function findByPath(F,p){ if(!p) return undefined; for(const f of F){ if(pathOf(F,f[0])===p) return f[0]; } return undefined; }
+
+// ============ 2) تحميل الدروس ============
+$('#bLes').onclick=()=>$('#fLes').click();
+$('#bDir').onclick=()=>$('#fDir').click();
+$('#fLes').onchange=e=>addFiles([...e.target.files]).then(()=>e.target.value='');
+$('#fDir').onchange=e=>addFiles([...e.target.files]).then(()=>e.target.value='');
+function validLesson(d){
+  if(!d||!Array.isArray(d.qcm)||!Array.isArray(d.cards)) return 'بنية غير صحيحة';
+  for(const [i,x] of d.qcm.entries()){
+    if(!Array.isArray(x)||typeof x[0]!=='string'||!Array.isArray(x[1])||x[1].length<2) return 'سؤال QCM رقم '+(i+1)+' غير صالح';
+    const a=[].concat(x[2]); if(!a.length||a.some(k=>!Number.isInteger(k)||k<0||k>=x[1].length)) return 'جواب السؤال '+(i+1)+' خارج الخيارات';
+  }
+  for(const [i,x] of d.cards.entries()) if(!Array.isArray(x)||typeof x[0]!=='string'||typeof x[1]!=='string') return 'بطاقة رقم '+(i+1)+' غير صالحة';
+  return null;
+}
+async function addFiles(files){
+  const msgs=[];
+  for(const f of files){
+    if(!/\.html?$/i.test(f.name)) continue;
+    const text=await f.text();
+    const m=text.match(/<script[^>]*id=["']lesson-data["'][^>]*>([\s\S]*?)<\/script>/i);
+    if(!m){ if(files.length<=3) msgs.push('«'+f.name+'»: ليس ملف درس (لا توجد كتلة lesson-data)'); continue; }
+    let d; try{ d=JSON.parse(m[1]); }catch(e){ msgs.push('«'+f.name+'»: JSON تالف'); continue; }
+    const err=validLesson(d); if(err){ msgs.push('«'+f.name+'»: '+err); continue; }
+    if(S.lessons.some(L=>L.file===f.name&&L.d.title===d.title&&L.d.qcm.length===d.qcm.length)){ msgs.push('«'+f.name+'»: مضاف من قبل'); continue; }
+    S.lessons.push({file:f.name,d,useQ:d.qcm.length>0,useC:d.cards.length>0,qDest:undefined,cDest:undefined,sub:d.title||f.name.replace(/\.html?$/i,'')});
+  }
+  $('#sLes').innerHTML=msgs.length?'<div class="msg warn"><ul>'+msgs.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>':'';
+  if(!S.lessons.length&&!msgs.length) $('#sLes').textContent='لم أجد أي ملف درس.';
+  applyLastDefaults(); refresh();
+}
+function applyLastDefaults(){
+  if(!S.DB||!S.last) return;
+  S.lessons.forEach(L=>{
+    if(L.qDest===undefined){ const id=findByPath(S.DB.f,S.last.q); if(id!==undefined) L.qDest=id; }
+    if(L.cDest===undefined&&S.FC){ const id=findByPath(S.FC.f,S.last.c); if(id!==undefined) L.cDest=id; }
+  });
+}
+
+// ============ عرض الدروس ============
+function refresh(){
+  $('#bLes').disabled=$('#bDir').disabled=!S.DB;
+  if(S.DB&&!S.lessons.length&&!$('#sLes').innerHTML) $('#sLes').textContent='أضف ملف درس واحدًا أو أكثر.';
+  const box=$('#lessons');
+  box.innerHTML=S.lessons.map((L,i)=>{
+    const q=L.d.qcm.length,c=L.d.cards.length;
+    const pq=L.qDest===undefined?'اختر مجلد QCM…':pathOf(S.DB.f,L.qDest)+(L.sub.trim()?' › '+L.sub.trim():'');
+    const pc=!S.FC?'(غير متاح)':L.cDest===undefined?'اختر مجلد البطاقات…':pathOf(S.FC.f,L.cDest)+(L.sub.trim()?' › '+L.sub.trim():'');
+    return `<div class="les" data-i="${i}">
+<div class="t"><span class="ltr">${esc(L.d.title)}<br><span class="cnt">${esc(L.file)}</span></span><button class="x" data-rm="${i}" aria-label="حذف">✕</button></div>
+<div class="cnt" style="margin-top:4px">${q} QCM · ${c} cartes</div>
+<div class="dest"><label><input type="checkbox" data-uq="${i}" ${L.useQ?'checked':''} ${q?'':'disabled'}> QCM</label><button class="pick ${L.qDest!==undefined?'set':''}" data-pq="${i}">📁 ${esc(pq)}</button></div>
+<div class="dest"><label><input type="checkbox" data-uc="${i}" ${L.useC?'checked':''} ${c&&S.FC?'':'disabled'}> Cartes</label><button class="pick ${L.cDest!==undefined?'set':''}" data-pc="${i}" ${S.FC?'':'disabled'}>🃏 ${esc(pc)}</button></div>
+<div style="margin-top:10px"><div class="cnt">اسم المجلد الجديد الذي سيُنشأ داخل المجلد المختار:</div><input type="text" data-sub="${i}" value="${esc(L.sub)}" placeholder="(فارغ = الإضافة مباشرة داخل المجلد المختار)"></div>
+</div>`}).join('');
+  const ready=S.DB&&S.lessons.length&&S.lessons.every(L=>(!L.useQ||L.qDest!==undefined)&&(!L.useC||L.cDest!==undefined))&&S.lessons.some(L=>L.useQ||L.useC);
+  $('#bGo').disabled=!ready;
+}
+$('#lessons').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.rm!==undefined){ S.lessons.splice(+b.dataset.rm,1); refresh(); }
+  else if(b.dataset.pq!==undefined) openPicker(+b.dataset.pq,'q');
+  else if(b.dataset.pc!==undefined) openPicker(+b.dataset.pc,'c');
+});
+$('#lessons').addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.uq!==undefined) S.lessons[+t.dataset.uq].useQ=t.checked;
+  if(t.dataset.uc!==undefined) S.lessons[+t.dataset.uc].useC=t.checked;
+  refresh();
+});
+$('#lessons').addEventListener('input',e=>{
+  const t=e.target; if(t.dataset.sub===undefined) return;
+  S.lessons[+t.dataset.sub].sub=t.value;
+  // تحديث المسارات المعروضة دون فقدان التركيز
+  const card=t.closest('.les'),i=+t.dataset.sub,L=S.lessons[i];
+  const pq=card.querySelector('[data-pq]'),pc=card.querySelector('[data-pc]');
+  if(L.qDest!==undefined) pq.textContent='📁 '+pathOf(S.DB.f,L.qDest)+(L.sub.trim()?' › '+L.sub.trim():'');
+  if(L.cDest!==undefined&&S.FC) pc.textContent='🃏 '+pathOf(S.FC.f,L.cDest)+(L.sub.trim()?' › '+L.sub.trim():'');
+});
+
+// ============ نافذة اختيار المجلد ============
+const MD={i:0,k:'q',open:new Set(),sel:undefined};
+function openPicker(i,k){
+  MD.i=i;MD.k=k;const L=S.lessons[i];MD.sel=k==='q'?L.qDest:L.cDest;MD.open=new Set();
+  const F=k==='q'?S.DB.f:S.FC.f;
+  if(MD.sel!=null){ const m=new Map(F.map(f=>[f[0],f])); for(let x=m.get(MD.sel);x&&x[1]!=null;x=m.get(x[1])) MD.open.add(x[1]); }
+  $('#mdT').textContent=k==='q'?'اختر مجلد QCM':'اختر مجلد البطاقات';
+  $('#q').value='';drawTree();$('#md').classList.add('on');
+}
+function drawTree(){
+  const k=MD.k,F=k==='q'?S.DB.f:S.FC.f,I=k==='q'?S.DB.q:S.FC.c;
+  const T=tree(F),term=$('#q').value.trim().toLowerCase();
+  const direct=new Map();I.forEach(x=>direct.set(x[1],(direct.get(x[1])||0)+1));
+  const tot=new Map();const calc=n=>{let s=direct.get(n.id)||0;n.ch.forEach(c=>s+=calc(c));tot.set(n.id,s);return s};T.roots.forEach(calc);
+  const match=n=>n.t.toLowerCase().includes(term)||n.ch.some(match);
+  let h=`<div class="n root ${MD.sel===null?'sel':''}" data-pick="root"><span class="tg"></span><span class="nm">⬆ الجذر (إنشاء مجلد رئيسي جديد)</span></div>`;
+  (function w(list,d){list.forEach(n=>{
+    if(term&&!match(n)) return;
+    const has=n.ch.length>0,op=term?true:MD.open.has(n.id);
+    h+=`<div class="n ${MD.sel===n.id?'sel':''}" data-pick="${n.id}" style="padding-left:${8+d*18}px"><button class="tg" data-tg="${n.id}">${has?(op?'▾':'▸'):'·'}</button><span class="nm">${esc(n.t)}</span><span class="c">${tot.get(n.id)}</span></div>`;
+    if(has&&op) w(n.ch,d+1);
+  })})(T.roots,0);
+  $('#tree').innerHTML=h;
+}
+$('#q').oninput=drawTree;
+$('#mdX').onclick=()=>$('#md').classList.remove('on');
+$('#md').addEventListener('click',e=>{ if(e.target.id==='md') $('#md').classList.remove('on'); });
+$('#tree').addEventListener('click',e=>{
+  const tg=e.target.closest('[data-tg]');
+  if(tg){ e.stopPropagation(); const id=+tg.dataset.tg; MD.open.has(id)?MD.open.delete(id):MD.open.add(id); const y=$('#tree').scrollTop; drawTree(); $('#tree').scrollTop=y; return; }
+  const n=e.target.closest('[data-pick]'); if(!n) return;
+  const id=n.dataset.pick==='root'?null:+n.dataset.pick;
+  const L=S.lessons[MD.i];
+  if(MD.k==='q'){ L.qDest=id; S.lessons.forEach(o=>{ if(o.qDest===undefined) o.qDest=id; }); }
+  else { L.cDest=id; S.lessons.forEach(o=>{ if(o.cDest===undefined) o.cDest=id; }); }
+  // حفظ آخر اختيار
+  try{ const r=JSON.parse(localStorage.getItem('merge-last')||'{}'); const F=MD.k==='q'?S.DB.f:S.FC.f; r[MD.k]=id==null?'':pathOf(F,id); localStorage.setItem('merge-last',JSON.stringify(r)); S.last=r; }catch(e){}
+  $('#md').classList.remove('on'); refresh();
+});
+
+// ============ 3) الدمج ============
+const norm=s=>String(s).replace(/\s+/g,' ').trim();
+function mergeAll(){
+  const DB=JSON.parse(JSON.stringify(S.DB)), FC=S.FC?JSON.parse(JSON.stringify(S.FC)):null;
+  let nq=Math.max(0,...DB.f.map(x=>x[0]),...DB.q.map(x=>x[0]))+1;
+  let nc=FC?Math.max(0,...FC.f.map(x=>x[0]),...FC.c.map(x=>x[0]))+1:0;
+  const rep=[];
+  const folder=(F,parent,name,take)=>{ // يجد أو ينشئ مجلدًا
+    const nm=norm(name);
+    if(!nm){ if(parent==null) throw new Error('اختر مجلدًا أو اكتب اسمًا للمجلد الجديد'); return {id:parent,created:false}; }
+    const ex=F.find(f=>f[1]===parent&&norm(f[3])===nm);
+    if(ex) return {id:ex[0],created:false};
+    const id=take(); F.push([id,parent,'M',nm]); return {id,created:true};
+  };
+  for(const L of S.lessons){
+    const r={title:L.d.title};
+    if(L.useQ&&L.d.qcm.length){
+      const f=folder(DB.f,L.qDest,L.sub,()=>nq++);
+      const seen=new Set(DB.q.filter(x=>x[1]===f.id).map(x=>norm(x[2])));
+      let add=0,skip=0;
+      for(const x of L.d.qcm){
+        if(seen.has(norm(x[0]))){skip++;continue}
+        seen.add(norm(x[0])); DB.q.push([nq++,f.id,x[0],x[1],x[2],x[3]||'']); add++;
+      }
+      r.q={add,skip,path:pathOf(DB.f,f.id),created:f.created};
+    }
+    if(L.useC&&L.d.cards.length&&FC){
+      const f=folder(FC.f,L.cDest,L.sub,()=>nc++);
+      const seen=new Set(FC.c.filter(x=>x[1]===f.id).map(x=>norm(x[2])));
+      let add=0,skip=0;
+      for(const x of L.d.cards){
+        if(seen.has(norm(x[0]))){skip++;continue}
+        seen.add(norm(x[0])); FC.c.push([nc++,f.id,x[0],x[1]]); add++;
+      }
+      r.c={add,skip,path:pathOf(FC.f,f.id),created:f.created};
+    }
+    rep.push(r);
+  }
+  DB.v=today();
+  let text=replaceLit(S.text,'const DB=',DB);
+  if(FC) text=replaceLit(text,'const FC=',FC);
+  return {text,DB,FC,rep};
+}
+let LAST=null;
+$('#bGo').onclick=()=>{
+  const o=$('#out'); LAST=null; $('#bShare').hidden=true;
+  try{
+    const R=mergeAll();
+    // تحقق: إعادة قراءة الملف الناتج
+    const DB2=parseLit(R.text,'const DB='),FC2=R.FC?parseLit(R.text,'const FC='):null;
+    if(!DB2||DB2.q.length!==R.DB.q.length||DB2.f.length!==R.DB.f.length||(R.FC&&(!FC2||FC2.c.length!==R.FC.c.length))) throw new Error('فشل التحقق من الملف الناتج، لم يتم إنشاء أي شيء');
+    const base=S.name.replace(/\.html?$/i,'').replace(/-\d{4}-\d{2}-\d{2}$/,'');
+    const fname=base+'-'+today()+'.html';
+    const blob=new Blob([R.text],{type:'text/html;charset=utf-8'}); LAST={blob,fname};
+    const lines=R.rep.map(r=>'<li><b class="ltr">'+esc(r.title)+'</b>'
+      +(r.q?'<br>QCM: أُضيف <b>'+r.q.add+'</b>'+(r.q.skip?' (تجاهلت '+r.q.skip+' مكرر)':'')+' ← <span class="ltr">'+esc(r.q.path)+'</span>'+(r.q.created?' <i>(مجلد جديد)</i>':''):'')
+      +(r.c?'<br>Cartes: أُضيف <b>'+r.c.add+'</b>'+(r.c.skip?' (تجاهلت '+r.c.skip+' مكرر)':'')+' ← <span class="ltr">'+esc(r.c.path)+'</span>'+(r.c.created?' <i>(مجلد جديد)</i>':''):'')+'</li>').join('');
+    o.innerHTML='<div class="msg ok">✅ تم الدمج والتحقق.<ul>'+lines+'</ul><div style="margin-top:8px">المجموع الآن: <b>'+R.DB.q.length+'</b> QCM'+(R.FC?' · <b>'+R.FC.c.length+'</b> بطاقة':'')+' — الإصدار <b class="ltr">'+R.DB.v+'</b></div></div>'
+      +'<div class="row" style="margin-top:10px"><button class="b" id="bDl">⬇️ تحميل <span class="ltr">'+esc(fname)+'</span></button></div>';
+    $('#bDl').onclick=download;
+    if(navigator.canShare&&navigator.canShare({files:[new File([blob],fname,{type:'text/html'})]})) $('#bShare').hidden=false;
+    download();
+  }catch(err){ o.innerHTML='<div class="msg err">❌ '+esc(err.message||err)+'</div>'; }
+};
+function download(){
+  if(!LAST) return;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(LAST.blob); a.download=LAST.fname;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);
+}
+$('#bShare').onclick=async()=>{ if(!LAST) return; try{ await navigator.share({files:[new File([LAST.blob],LAST.fname,{type:'text/html'})]}); }catch(e){} };
+refresh();
+</script>
+</body>
+</html>
