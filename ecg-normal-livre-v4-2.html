@@ -35,11 +35,19 @@ header{flex:none;background:var(--bg);padding:calc(8px + env(safe-area-inset-top
 main{flex:1;min-height:0;position:relative;overflow:auto}
 #viewer{position:absolute;inset:0;display:none}
 #viewer iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+/* وضع القراءة: شاشة كاملة للدرس بدون الشريط العلوي */
+body.rd header{display:none}
+body.rd #viewer{top:env(safe-area-inset-top,0px)}
+#fab{position:fixed;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:none;flex-direction:column;gap:8px;z-index:20}
+body.rd #fab{display:flex}
+#fab button{width:40px;height:40px;border-radius:50%;background:var(--card);color:var(--tx);border:1px solid var(--line);font-size:17px;line-height:1;opacity:.82;box-shadow:0 2px 8px rgba(0,0,0,.28);padding:0}
+#fab button:active{opacity:1}
 </style>
 </head>
 <body>
 <header><div class="w" style="padding-top:0;padding-bottom:0"><div class="bar"><button class="bk" id="bk" aria-label="Retour">←</button><div id="path"></div><button class="th" id="th"></button></div><div id="t"></div></div></header>
 <main id="main"><div class="w" id="m"></div><div id="viewer"></div></main>
+<div id="fab"><button id="fBack" aria-label="Retour">←</button><button id="fRail" aria-label="Sommaire" style="display:none">☰</button><button id="fPrint" aria-label="Imprimer">🖨</button><button id="fTheme" aria-label="Mode nuit">🌙</button></div>
 
 <script>
 /* ============================================================
@@ -134,6 +142,7 @@ function applyTheme(){
   const r = document.documentElement;
   if(tm==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', tm);
   $('#th').textContent = TL[tm];
+  $('#fTheme').textContent = isDark() ? '☀️' : '🌙';
   syncFrame();
 }
 $('#th').onclick = () => {
@@ -150,7 +159,7 @@ function syncFrame(){
   f.contentWindow.postMessage({promoTheme: isDark() ? 'dark' : 'light'}, '*');
 }
 /* script injecté dans chaque cours : applique le thème reçu */
-const INJECT = '<script>addEventListener("message",function(e){var m=e.data;if(!m||!m.promoTheme)return;var dark=m.promoTheme==="dark",d=document;var btn=d.querySelector("#theme");if(btn&&d.documentElement.classList.contains("dk")!==dark)btn.click();var s=d.getElementById("__sync");if(!s){s=d.createElement("style");s.id="__sync";d.head.appendChild(s)}s.textContent=dark?":root{--desk:#20302f}":":root{--desk:#8fa6a3}"});<\/script>';
+const INJECT = "<script>(function(){\nvar d=document,R=d.documentElement;\nvar st=d.createElement('style');\nst.textContent='.top{display:none!important}#rail{top:0!important;height:100vh!important}html.norail .wrap{grid-template-columns:minmax(0,1fr)!important}html.norail #rail{display:none!important}html.fdark{filter:invert(1) hue-rotate(180deg);background:#fff}html.fdark img,html.fdark canvas,html.fdark video{filter:invert(1) hue-rotate(180deg)}@media print{html.fdark,html.fdark img,html.fdark canvas,html.fdark video{filter:none!important}}';\nd.head.appendChild(st);\nR.classList.add('norail');\ntry{parent.postMessage({promoInfo:{rail:!!d.querySelector('#rail')}},'*')}catch(x){}\naddEventListener('message',function(e){\n var m=e.data;if(!m)return;\n if(m.promoTheme){\n  var dark=m.promoTheme==='dark',b=d.querySelector('#theme');\n  if(b){if(R.classList.contains('dk')!==dark)b.click()}else R.classList.toggle('fdark',dark);\n }\n if(m.promoCmd==='print'){var p=d.querySelector('#print');if(p)p.click();else print()}\n if(m.promoCmd==='rail'){\n  if(innerWidth>1000)R.classList.toggle('norail');\n  else{var mb=d.querySelector('#menu');if(mb)mb.click()}\n }\n});\n})();<\/script>";
 
 /* ---------- ouverture d'un cours (Blob depuis base64) ---------- */
 const urls = {};
@@ -193,6 +202,8 @@ function render(){
   $('#t').textContent = path.length===1 ? 'Choisir un dossier' : node.name;
   $('#path').textContent = path.slice(1,-1).map(n=>n.name).join(' › ');
   main.scrollTop = 0;
+  document.body.classList.toggle('rd', !!node.lesson);
+  $('#fRail').style.display = 'none';
   if(node.lesson){
     m.style.display = 'none'; viewer.style.display = 'block';
     viewer.innerHTML = '';
@@ -229,6 +240,16 @@ $('#m').addEventListener('click', e => {
   }
   if(b.dataset.h) location.hash = b.dataset.h;
 });
+const lf = () => { const f = $('#viewer iframe'); return f && f.contentWindow; };
+const cmd = c => { const w = lf(); if(w) w.postMessage({promoCmd:c}, '*'); };
+addEventListener('message', e => {
+  const w = lf(); if(!w || e.source!==w) return;
+  if(e.data && e.data.promoInfo) $('#fRail').style.display = e.data.promoInfo.rail ? '' : 'none';
+});
+$('#fRail').onclick = () => cmd('rail');
+$('#fPrint').onclick = () => cmd('print');
+$('#fTheme').onclick = () => { tm = isDark() ? 'light' : 'dark'; try{ localStorage.setItem('theme', tm); }catch(e){} applyTheme(); };
+$('#fBack').onclick = () => $('#bk').onclick();
 $('#bk').onclick = () => { const p = resolve(); if(p.length>1){ p.pop(); location.hash = hashOf(p); } };
 addEventListener('hashchange', render);
 applyTheme(); render();
