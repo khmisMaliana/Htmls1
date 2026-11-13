@@ -25,7 +25,7 @@
 
 <script>
 const $ = id => document.getElementById(id);
-
+   const API = location.hostname.endsWith("github.io") ? "https://continues-linux-publishers-whether.trycloudflare.com" : "";
 function getDevice() {
   let d = localStorage.getItem("device");
   if (!d) {
