@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>منصتي</title>
+</head>
+<body>
+<h1>منصتي</h1>
+
+<div id="loginBox">
+  <h3>أدخل كود الاشتراك</h3>
+  <input id="code" placeholder="الكود"><br>
+  <button onclick="login()">دخول</button>
+</div>
+
+<div id="mainBox" style="display:none">
+  <p>تخصصك: <b id="spec"></b></p>
+  <button onclick="logout()">خروج</button>
+  <h3>الروابط</h3>
+  <ul id="list"></ul>
+</div>
+
+<p id="msg" style="color:red"></p>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function getDevice() {
+  let d = localStorage.getItem("device");
+  if (!d) {
+    d = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+    localStorage.setItem("device", d);
+  }
+  return d;
+}
+
+const ERR = {
+  invalid: "الكود غير صحيح",
+  devices: "وصل الكود إلى الحد الأقصى من الأجهزة",
+  net: "تعذّر الاتصال بالخادم"
+};
+
+async function login() {
+  const code = $("code").value.trim().toUpperCase();
+  if (!code) return;
+  try {
+    const r = await fetch("/api/login", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({code: code, device: getDevice()})
+    });
+    const j = await r.json();
+    if (!r.ok) { $("msg").textContent = ERR[j.error] || "خطأ"; return; }
+    localStorage.setItem("code", code);
+    $("msg").textContent = "";
+    show(j.specialty);
+  } catch (e) {
+    $("msg").textContent = ERR.net;
+  }
+}
+
+async function show(spec) {
+  $("loginBox").style.display = "none";
+  $("mainBox").style.display = "block";
+  $("spec").textContent = spec;
+  try {
+    const r = await fetch("/api/links", {
+      headers: {"X-Code": localStorage.getItem("code"), "X-Device": getDevice()}
+    });
+    const links = await r.json();
+    if (!r.ok) { logout(); $("msg").textContent = ERR[links.error] || "خطأ"; return; }
+    const ul = $("list");
+    ul.innerHTML = "";
+    if (links.length === 0) ul.textContent = "لا يوجد محتوى بعد";
+    links.forEach(l => {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = l.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = l.title || l.url;
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+  } catch (e) {
+    $("msg").textContent = ERR.net;
+  }
+}
+
+function logout() {
+  localStorage.removeItem("code");
+  $("mainBox").style.display = "none";
+  $("loginBox").style.display = "block";
+}
+
+(async function () {
+  const saved = localStorage.getItem("code");
+  if (saved) {
+    $("code").value = saved;
+    await login();
+  }
+})();
+</script>
+</body>
+</html>
